@@ -99,3 +99,46 @@ contract("donating to charity", function (accounts) {
     );
   });
 });
+
+contract(" approve a charity", function (accounts) {
+  it("should let BODs to approve the charity ", async function () {
+    await instance.addBOD(accounts[1]);
+    await instance.addCharity(
+      0,
+      accounts[3],
+      "global warming",
+      web3.utils.toWei("2", "ether"),
+      { from: accounts[0] }
+    );
+    await instance.donateToCharity(0, {
+      from: accounts[2],
+      value: web3.utils.toWei("2", "ether"),
+    });
+
+    await instance.approveForDonation(0, { from: accounts[1] });
+
+    const getCharity = await instance.charities(0);
+    assert.equal(getCharity.approvers.toString(), "1");
+  });
+});
+contract("transfer donation funds", function (accounts) {
+  it("should let BODs to approve the charity ", async function () {
+    await instance.addBOD(accounts[1]);
+    await instance.addCharity(
+      0,
+      accounts[4],
+      "global warming",
+      web3.utils.toWei("2", "ether"),
+      { from: accounts[0] }
+    );
+    await instance.donateToCharity(0, {
+      from: accounts[2],
+      value: web3.utils.toWei("2", "ether"),
+    });
+
+    await instance.approveForDonation(0, { from: accounts[1] });
+    await instance.transferFundsToCharity(0, { from: accounts[0] });
+    const balance = await web3.eth.getBalance(accounts[4]);
+    assert.ok(web3.utils.fromWei(balance, "ether") > 101);
+  });
+});

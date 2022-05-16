@@ -9,11 +9,13 @@ contract MultiSigWallet {
     uint256 public numberOfBOD;
     struct Charity {
         uint256 charityID;
-        address donationRecipient;
+        address payable donationRecipient;
         string charityName;
         uint256 targetDonationAmount;
         uint256 currentDonationAmount;
         address[] donors;
+        uint256 approvers;
+        mapping(address => bool) approved;
     }
     mapping(uint256 => Charity) public charities;
     mapping(uint256 => bool) public isAlreadyACharity;
@@ -56,7 +58,7 @@ contract MultiSigWallet {
         //updating a Charity
         isAlreadyACharity[_id] = true;
         charities[_id].charityID = _id;
-        charities[_id].donationRecipient = _recipient;
+        charities[_id].donationRecipient = payable(_recipient);
         charities[_id].charityName = _name;
         charities[_id].targetDonationAmount = _targetDonation;
     }
@@ -64,7 +66,7 @@ contract MultiSigWallet {
     function donateToCharity(uint256 _id) external payable {
         require(isAlreadyACharity[_id] == true, "not a charity");
         require(
-            charities[_id].currentDonationAmount !=
+            charities[_id].currentDonationAmount <
                 charities[_id].targetDonationAmount,
             "donation target reached"
         );
@@ -73,5 +75,39 @@ contract MultiSigWallet {
             .currentDonationAmount
             .add(msg.value);
         charities[_id].donors.push(msg.sender);
+    }
+
+    function approveForDonation(uint256 _id) external {
+        require(isAlreadyACharity[_id] == true, "not a charity");
+        require(
+            charities[_id].approved[msg.sender] == false,
+            "already approved"
+        );
+        require(isBOD[msg.sender] == true, "not a bod");
+        require(
+            charities[_id].currentDonationAmount ==
+                charities[_id].targetDonationAmount,
+            "donation target reached"
+        );
+
+        charities[_id].approvers = charities[_id].approvers.add(1);
+        charities[_id].approved[msg.sender] = true;
+    }
+
+    function transferFundsToCharity(uint256 _id) external onlyOwner {
+        require(isAlreadyACharity[_id] == true, "not a charity");
+        require(
+            charities[_id].currentDonationAmount >=
+                charities[_id].targetDonationAmount,
+            "donation target not reached"
+        );
+        require(
+            charities[_id].approvers >= numberOfBOD.div(2),
+            "BOD dose approved"
+        );
+        charities[_id].donationRecipient.transfer(
+            charities[_id].currentDonationAmount
+        );
+        isAlreadyACharity[_id] = false;
     }
 }
