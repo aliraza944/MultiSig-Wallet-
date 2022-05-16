@@ -22,7 +22,9 @@ contract("board of directors", function (accounts) {
   it("removes a board member", async function () {
     await instance.removeBOD(accounts[1]);
     const isBOD = await instance.isBOD(accounts[1]);
+    const bod = await instance.numberOfBOD();
     assert.equal(isBOD, false);
+    assert.equal(bod.toString(), "0");
   });
 });
 

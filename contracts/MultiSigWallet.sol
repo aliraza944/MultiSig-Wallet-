@@ -6,6 +6,7 @@ contract MultiSigWallet {
     using SafeMath for uint256;
     address public owner;
     mapping(address => bool) public isBOD;
+    uint256 public numberOfBOD;
     struct Charity {
         uint256 charityID;
         address donationRecipient;
@@ -29,13 +30,19 @@ contract MultiSigWallet {
     }
 
     function addBOD(address _bod) external onlyOwner {
-        require(msg.sender != address(0));
+        require(isBOD[_bod] == false, "bod already present");
+        require(_bod != address(0));
         isBOD[_bod] = true;
+        numberOfBOD = numberOfBOD.add(1);
     }
 
     function removeBOD(address _bod) external onlyOwner {
-        require(msg.sender != address(0));
+        require(isBOD[_bod] == true, "Not present");
+
+        require(numberOfBOD > 0, "no BOD found");
+        require(_bod != address(0));
         isBOD[_bod] = false;
+        numberOfBOD = numberOfBOD.sub(1);
     }
 
     function addCharity(
